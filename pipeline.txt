@@ -1,4 +1,36 @@
 #######################################
+############## OUR DATA ###############
+
+>>> 230ish amplicon libraries, for different genes (insect mitochondrial - COI, 16S rRNA; bacterial - 16S rRNA, different regions), for different insects or groups of insects. Different amplicon types within library.
+>>> Libraries prepared using custom two-step PCR (first round - template-specific PCR; second round - indexing), following a modified Meyer & Kircher 2010 protocol.
+>>> Pooled libraries sequenced on a shared MiSeq v3 lane (2x300bp reads) at the Institute of Environmental Sciences
+>>> Data available on the IES cluster: /mnt/matrix/symbio/raw_data/20191109_MiSeq_first_run/
+
+
+#######################################
+####### THE PIPELINE - SUMMARY ########
+
+For selected samples, we:
+	Copy reads to a working directory
+	Trim reads (trim_galore)
+	Assemble reads into contigs
+	Quality-screen reads
+	Select unique sequences and compute count table
+	Discard rare unique seqs
+	Align reads to a reference, discard those that didn't align
+	[16S] Screen for chimeras
+	[16S] Assign taxonomy
+	Compute distance matrix, pick OTUs
+	Prepare OTU tables
+
+Example data that I am starting with: three libraries for Macrosteles laevis leafhopper individuals, prepped by Sandra and Monika. They attempted to amplify three genes:
+	Insect mitochondrial COI (primers BF3 & BR2)
+	Insect mitochondrial 16S rRNA (primers Chiar16SF and Chiar16SR, Marquina et al. 2018)
+	Bacterial 16S rRNA (primers 515F and 806R)
+... but mito16S didn't amplify because of a critical mismatch in one of the primers. Then, these libraries contain the mixture of two products.
+
+
+#######################################
 ############## Preparations ###########
 
 ############################
