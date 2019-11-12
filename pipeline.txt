@@ -78,7 +78,7 @@ screen -S mothur_session
 
 
 #######################################
-#### MOTHUR - SETUP, QC, trimmming ####
+#### MOTHUR - SETUP, QC, TRIMMING #####
 
 ### Within a screen, start mothur!
 mothur
@@ -123,7 +123,7 @@ head -20 raw_reads/S-BTW1_R2.fastq
 head -20 ML.trim.contigs.fasta
     # displays the first five contigs.
 
-### Open them in CodonCode Aligner, assemble reads + contigs corresponding to the same read pair ... not great.
+### Paste reads into CodonCode Aligner, assemble reads + contigs corresponding to the same read pair ... not great.
 ### Mothur uses read quality information to a limited extent; the information that certain regions are of low quality becomes lost.
 ### But a bigger problem is that for our 16S rRNA v4 contigs, reads are longer than the contigs - and so they are reading into the adapter.
 ### It would be hard to deal with. A possible approach would be trimming the reads --- eliminating the last 20-50 bases from each.
