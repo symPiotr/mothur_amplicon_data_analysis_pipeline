@@ -102,7 +102,7 @@ system(cat ~/amplicon_analyses/20191112_test/ML.files)
 ### Re-set working directory 
 set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
-### Make contigs!
+### Join forward and reverse reads into contigs!
 make.contigs(file=ML.files)
     # Output File Names: 
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.trim.contigs.fasta
@@ -112,21 +112,31 @@ make.contigs(file=ML.files)
     # let's look at them!
 
 
-######## Read quality control ...
-# (Ctrl+A+D --> leave the mothur screen)
-head -40 raw_reads/S-BTW1_R1.fastq
-head -40 raw_reads/S-BTW1_R2.fastq
+### Let's disconnect from the screen where mothur runs
+    # Ctrl+A+D
+
+### And look at a subset of original reads and the assembled contigs. 
+head -20 raw_reads/S-BTW1_R1.fastq
+    # displays the first five R1 reads ...
+head -20 raw_reads/S-BTW1_R2.fastq
+    # displays the first five R2 reads ...
 head -20 ML.trim.contigs.fasta
+    # displays the first five contigs.
 
-# Open them in CodonCode Aligner ... not great.
+### Open them in CodonCode Aligner, assemble reads + contigs corresponding to the same read pair ... not great.
+### Mothur uses read quality information to a limited extent; the information that certain regions are of low quality becomes lost.
+### But a bigger problem is that for our 16S rRNA v4 contigs, reads are longer than the contigs - and so they are reading into the adapter.
+### It would be hard to deal with. A possible approach would be trimming the reads --- eliminating the last 20-50 bases from each.
+### We can do this using software called trim_galore, also in our path.
 
-###
+### Trim reads using trim_galore:
 cd raw_reads
-
-#ls *fastq | xargs trim_galore --dont_gzip --hardtrim5 250 
 trim_galore --dont_gzip --hardtrim5 250 *fastq
 
-# edit ML.files
+### In TextWrangler, edit the sample-file info (ML.files) so that the samples are linked to the newly trimmed fastq files:
+    # Hopefully, lines will go like this ---
+        # S-BTW1	S-BTW1_R1..250bp_5prime.fq	S-BTW1_R2.250bp_5prime.fq
+
 
 # get back to mothur
 
