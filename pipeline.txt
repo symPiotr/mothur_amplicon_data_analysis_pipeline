@@ -75,36 +75,41 @@ screen -S mothur_session
 	# Ctrl+A, then type :quit --- kill session you are connected to.
 
 
-############################
-### Start mothur!
-mothur
 
 
 #######################################
-############## Running mothur #########
+#### MOTHUR - SETUP, QC, trimmming ####
 
+### Within a screen, start mothur!
+mothur
 
-######## Set working directory
+### Set working directory
 set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
-
-######## Assemble forward and reverse reads into contigs
-### Create sample list
+### Assemble forward and reverse reads into contigs
+### First, create the file with a list of libraries and files.
 make.file(inputdir=~/amplicon_analyses/20191112_test/raw_reads, type=fastq, prefix=ML)
+
+### You may want to see how the file looks, and edit it.
+system(cat ~/amplicon_analyses/20191112_test/ML.files)
+    # Hopefully, lines will go like this ---
+        # S-BTW1	S-BTW1_R1.fastq	S-BTW1_R2.fastq
+    # You may want to edit your files manually to avoid dashes within sample names, as this would create problems downstream.
+    # In TextWrangler, File > Open from FTP/SFTP Server;
+    # Then Search > Replace;
+    # Then ^S-BTW >>> S_BTW
+
+### Re-set working directory 
 set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
-system(cat ~/amplicon_analyses/20191112_test/ML.files)
-
-### Make contigs
+### Make contigs!
 make.contigs(file=ML.files)
-
-	# Output File Names: 
+    # Output File Names: 
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.trim.contigs.fasta
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.scrap.contigs.fasta
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.contigs.report
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.contigs.groups
-	#
-	# let's look at them!
+    # let's look at them!
 
 
 ######## Read quality control ...
