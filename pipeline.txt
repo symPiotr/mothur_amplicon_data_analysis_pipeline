@@ -31,20 +31,22 @@ Example data that I am starting with: three libraries for Macrosteles laevis lea
 
 
 #######################################
-############## Preparations ###########
+######## SETTING UP WORKSPACE #########
 
-############################
-### Create working directory on the cluster, go there!
-cd 
+### Login to the cluster!
+ssh user.name@149.156.165.80 <- leskowiec
+
+### Create working directory, perhaps in your home directory. Go there.
+cd ~
 mkdir amplicon_analyses
 cd amplicon_analyses
 mkdir 20191112_test
 cd 20191112_test
 
-############################
+### Select files for analysis.
 ### Mothur can work with gzip-compressed files, but the last time I had some issues.
-### Hence, it might be easier to copy them to your work-dir and uncompress.
-### You may or may not want to rename them.
+### Hence, you might choose to copy selected files, for example to raw_reads folder in your work-dir, and uncompress them there.
+### You may or may not want to rename the files.
 
 mkdir raw_reads
 cd raw_reads
@@ -59,12 +61,19 @@ cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW3_S207_L001
 gunzip *
 cd ..
 
-############################
-### Check cluster usage
+### Check cluster usage. Make sure it's not being used too heavily!
+### My favorite tool is htop:
 htop
+    # Press q to quit!
 
-### Start screen --- an interactive session which assures that a broken network connection won't waste your analyses
+### Start screen --- an interactive session which helps ensure that a broken network connection won't interrupt your analyses
 screen -S mothur_session
+    # Other useful commands:
+	# Ctrl+A+D --- leave session;
+	# screen -r <session_name OR session#> --- rejoin session;
+	# screen -ls --- list running sessions;
+	# Ctrl+A, then type :quit --- kill session you are connected to.
+
 
 ############################
 ### Start mothur!
