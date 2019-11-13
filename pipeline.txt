@@ -224,8 +224,8 @@ count.groups(count=current)
 
 
 
-#######################################
-## MOTHUR: alignments, OTU picking.. ##
+####################################################
+### MOTHUR: COI data - alignments, OTU picking.. ###
 
 ### First, let's try to extract M. laevis COI sequences
 
@@ -262,49 +262,66 @@ bin.seqs(list=current, fasta=current, label=0.01)
 make.shared(list=current,count=current,label=0.01)
     # Create a 99% OTU table.
 
-### Now, look at the resulting files!!!
+### Look at the resulting files!
+
+### Get a representative sequence for each OTU!
+### The command is not working at the moment - TO BE FIXED!
+# get.oturep(column=current, list=current, fasta=current, cutoff=0.01)
 
 
-######## Align 16S sequences against a SILVA db
-align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, processors=24)
 
 
+####################################################
+### MOTHUR: 16S data - alignments, OTU picking.. ###
+
+### Align 16S sequences against a SILVA db
+align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, processors=20)
+
+### Get sequence alignment info!
 summary.seqs(fasta=ML.trim.contigs.trim.unique.abund.align)
+
+### Remove unaligned
 screen.seqs(fasta=ML.trim.contigs.trim.unique.abund.align, count=ML.trim.contigs.trim.abund.count_table, start=13862, end=23444, minlength=220)
 
+### Remove gaps
 filter.seqs(fasta=current, vertical=T, trump=.)
 
+### Redo unique.seqs
 unique.seqs(fasta=ML.trim.contigs.trim.unique.abund.good.filter.fasta, count=ML.trim.contigs.trim.abund.good.count_table)
     # ML.trim.contigs.trim.unique.abund.good.filter.count_table
     # ML.trim.contigs.trim.unique.abund.good.filter.unique.fasta
 
 
-######## Identify and remove chimaeric sequences using UChime
+### Identify and remove chimaeric sequences using UChime
 chimera.uchime(fasta=ML.trim.contigs.trim.unique.abund.good.filter.unique.fasta, reference=self, count=ML.trim.contigs.trim.unique.abund.good.filter.count_table, dereplicate=f, mindiv=0.35, processors=24, minh=0.5, xn=3)
-remove.seqs(accnos=current, fasta=current, count=current)
+remove.seqs(accnos=current, fasta=current, count=current, processors=20)
 
 
-######## Classify
+### Classify the sequences by taxonomy
 classify.seqs(fasta=current, count=current, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, taxonomy=/mnt/matrix/symbio/db/silva.seed_v132.tax, cutoff=80)
+
+
+
 
 remove.lineage(fasta=current, count=current, taxonomy=current, taxon=Chloroplast-Mitochondria-unknown-Archaea-Eukaryota)
 
 summary.tax(taxonomy=current, count=current)
 
+### Simplify file names
+rename.file(fasta=current, count=current, taxonomy=current, prefix=ML_16S)
 
-######## Simplify file names
-system(mv ML.trim.contigs.trim.unique.abund.good.filter.unique.pick.pick.fasta ML_16S.fasta)
-system(mv ML.trim.contigs.trim.unique.abund.good.filter.pick.pick.count_table ML_16S.count_table)
-system(mv ML.trim.contigs.trim.unique.abund.good.filter.unique.pick.seed_v132.wang.pick.taxonomy ML_16S.taxonomy)
-
-######## Compute distance matrix, cluster, construct summary tables
+### Compute distance matrix, cluster, construct summary tables
 dist.seqs(fasta=ML_16S.fasta, processors=24, cutoff=0.05)
 cluster(column=current, count=ML_16S.count_table, cutoff=0.03, method=average)
-bin.seqs(list=current, fasta=current, label=0.01)
-make.shared(list=current,count=current,label=0.01)
+bin.seqs(list=current, fasta=current, label=0.03)
+make.shared(list=current, count=current, label=0.03)
 
 
+### Classifying OTUs
+classify.otu(list=current,count=current,taxonomy=current, label=0.03)
 
+### Extracting representative sequences
+get.oturep(column=current, list=current, fasta=current, count=current, cutoff=0.01)
 
 
 
