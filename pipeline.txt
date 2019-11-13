@@ -96,11 +96,8 @@ system(cat ~/amplicon_analyses/20191112_test/ML.files)
         # S-BTW1	S-BTW1_R1.fastq	S-BTW1_R2.fastq
     # You may want to edit your files manually to avoid dashes within sample names, as this would create problems downstream.
     # In TextWrangler, File > Open from FTP/SFTP Server;
-    # Then Search > Replace;
+    # Then Search > Replace; Select "grep" as the option;
     # Then ^S-BTW >>> S_BTW
-
-### Re-set working directory 
-set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
 ### Join forward and reverse reads into contigs!
 make.contigs(file=ML.files)
@@ -111,9 +108,11 @@ make.contigs(file=ML.files)
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.contigs.groups
     # let's look at them!
 
+### Re-set working directory 
+set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
 ### Let's disconnect from the screen where mothur runs
-    # Ctrl+A+D
+    # Ctrl+a+d
 
 ### And look at a subset of original reads and the assembled contigs. 
 head -20 raw_reads/S-BTW1_R1.fastq
@@ -134,12 +133,13 @@ cd raw_reads
 trim_galore --dont_gzip --hardtrim5 250 *fastq
 
 ### In TextWrangler, edit the sample-file info (ML.files) so that the samples are linked to the newly trimmed fastq files:
+### Also, we have been changing the input directory more than once, which can create confusion;
+### Hence, it might be safer if in your ML.files you specify the full path to your reads!
     # Hopefully, lines will go like this ---
-        # S-BTW1	S-BTW1_R1..250bp_5prime.fq	S-BTW1_R2.250bp_5prime.fq
+        #S_BTW1	~/amplicon_analyses/20191112_test/raw_reads/S-BTW1_R1.250bp_5prime.fq	~/amplicon_analyses/20191112_test/raw_reads/S-BTW1_R2.250bp_5prime.fq
 
 
-# get back to mothur
-
+### get back to mothur
 make.contigs(file=ML.files)
 
 
