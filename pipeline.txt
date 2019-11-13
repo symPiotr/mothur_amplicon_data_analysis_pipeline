@@ -34,7 +34,7 @@ Example data that I am starting with: three libraries for Macrosteles laevis lea
 ######## SETTING UP WORKSPACE #########
 
 ### Login to the cluster!
-ssh user.name@149.156.165.80 <- leskowiec
+ssh user.name@149.156.165.80 			# <- leskowiec
 
 ### Create working directory, perhaps in your home directory. Go there.
 cd ~
@@ -69,11 +69,11 @@ htop
 ### Start screen --- an interactive session which helps ensure that a broken network connection won't interrupt your analyses
 screen -S mothur_session
     # Other useful commands:
-	# Ctrl+A+D --- leave session;
+	# Ctrl+a+d --- leave session;
 	# screen -r <session_name OR session#> --- rejoin session;
 	# screen -rd <session_name OR session#> --- rejoin session which is listed as "attached", for example because the software hasn't yet realized that you lost connection ;
 	# screen -ls --- list running sessions;
-	# Ctrl+A, then type :quit --- kill session you are connected to.
+	# Ctrl+a, then type :quit --- kill session you are connected to.
 
 
 
@@ -210,7 +210,7 @@ count.seqs(name=ML.trim.contigs.trim.accnos, group=ML.contigs.pick.groups, compr
 
 ### Check the sequences, with and without group file!
 summary.seqs(fasta=ML.trim.contigs.trim.unique.fasta)
-summary.seqs(fasta=ML.trim.contigs.trim.unique.fasta, count=ML.contigs.pick.count_table)
+summary.seqs(fasta=ML.trim.contigs.trim.unique.fasta, count=ML.trim.contigs.trim.count_table)
 
 ### Count sequences in each library, this time using the count_table as input
 count.groups(count=ML.trim.contigs.trim.count_table)
@@ -293,17 +293,14 @@ unique.seqs(fasta=ML.trim.contigs.trim.unique.abund.good.filter.fasta, count=ML.
 
 
 ### Identify and remove chimaeric sequences using UChime
-chimera.uchime(fasta=ML.trim.contigs.trim.unique.abund.good.filter.unique.fasta, reference=self, count=ML.trim.contigs.trim.unique.abund.good.filter.count_table, dereplicate=f, mindiv=0.35, processors=24, minh=0.5, xn=3)
-remove.seqs(accnos=current, fasta=current, count=current, processors=20)
+chimera.uchime(fasta=ML.trim.contigs.trim.unique.abund.good.filter.unique.fasta, reference=self, count=ML.trim.contigs.trim.unique.abund.good.filter.count_table, dereplicate=f, mindiv=0.35, processors=20, minh=0.5, xn=3)
+remove.seqs(accnos=current, fasta=current, count=current)
 
 
 ### Classify the sequences by taxonomy
 classify.seqs(fasta=current, count=current, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, taxonomy=/mnt/matrix/symbio/db/silva.seed_v132.tax, cutoff=80)
 
-
-
-
-remove.lineage(fasta=current, count=current, taxonomy=current, taxon=Chloroplast-Mitochondria-unknown-Archaea-Eukaryota)
+remove.lineage(fasta=current, count=current, taxonomy=current, taxon=Chloroplast-Mitochondria-Archaea-Eukaryota)
 
 summary.tax(taxonomy=current, count=current)
 
