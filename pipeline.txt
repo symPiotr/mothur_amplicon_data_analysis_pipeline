@@ -127,11 +127,16 @@ head -20 ML.trim.contigs.fasta
 ### Mothur uses read quality information to a limited extent; the information that certain regions are of low quality becomes lost.
 ### But a bigger problem is that for our 16S rRNA v4 contigs, reads are longer than the contigs - and so they are reading into the adapter.
 ### It would be hard to deal with. A possible approach would be trimming the reads --- eliminating the last 20-50 bases from each.
-### We can do this using software called trim_galore, also in our path.
+### We can do this using software called trim_galore.
+### The link to trim_galore executable is in the folder /mnt/matrix/symbio/bin, which you may want to add to your PATH. ### Ask Piotr if you need help with that!
 
 ### Trim reads using trim_galore:
 cd raw_reads
 trim_galore --dont_gzip --hardtrim5 250 *fastq
+    # will only work if trim_galore is in a folder in your PATH!
+/mnt/matrix/symbio/bin/trim_galore --dont_gzip --hardtrim5 250 *fastq
+    # that should work from any location: you are specifying absolute path to the executable.
+
 
 ### In TextWrangler, edit the sample-file info (ML.files) so that the samples are linked to the newly trimmed fastq files:
 ### Also, we have been changing the input directory more than once, which can create confusion;
