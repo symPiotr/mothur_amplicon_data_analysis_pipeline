@@ -87,6 +87,11 @@ mothur
 ### Set working directory
 set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
+### Check what are the working directories. This is important --- this is where the software
+### will be looking for input files and saving output files! You can change the directory at any point
+### using the previous command.
+get.current()
+
 ### Assemble forward and reverse reads into contigs
 ### First, create the file with a list of libraries and files.
 make.file(inputdir=~/amplicon_analyses/20191112_test/raw_reads, type=fastq, prefix=ML)
@@ -211,7 +216,7 @@ unique.seqs(fasta=ML.trim.contigs.trim.fasta)
 
 ### Generate count_table = a unique sequence table
 ### This is an important step! Google?
-count.seqs(name=ML.trim.contigs.trim.accnos, group=ML.contigs.pick.groups, compress=f)
+count.seqs(name=ML.trim.contigs.trim.names, group=ML.contigs.pick.groups, compress=f)
 
 ### Check the sequences, with and without group file!
 summary.seqs(fasta=ML.trim.contigs.trim.unique.fasta)
@@ -236,9 +241,13 @@ count.groups(count=current)
 
 ### Align sequences against a complete MLAE mitogenome!
 ### That might take a while.
-align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=references/mito_MLAE.fasta, processors=16)
+align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/references/mito_MLAE.fasta, processors=16)
    # COI alignment region expected: 2578-2995
    # 16S alignment region expected: 13487-1382
+   
+   # Consider using other references:
+   	/mnt/matrix/symbio/db/references/mito16S_MACQUA.fasta (mitochondrial 16S rRNA of Macrosteles quadrilineatus)
+	/mnt/matrix/symbio/db/references/COI_MACQUA.fasta (mitochondrial COI of Macrosteles quadrilineatus)
 
 ### Now, let's see how the sequences have aligned
 summary.seqs(fasta=ML.trim.contigs.trim.unique.abund.align)
