@@ -1,0 +1,46 @@
+### Analysis of Ela's insect mock community libraries
+
+### Working on fsm [ssh piotr.lukasik@149.156.165.182]
+### Starting the script in /home/piotr.lukasik/amplicons/20191127_mock_communities/
+
+get.current()
+make.file(inputdir=./raw_data, type=fastq, prefix=Exp2)
+
+    ### At this point, you may want to edit the file in TextWrangler to avoid "-" in sample names. I didn't, and that was a pain...
+    
+make.contigs(file=current)
+set.dir(input=/home/piotr.lukasik/amplicons/20191127_mock_communities/ output=/home/piotr.lukasik/amplicons/20191127_mock_communities/)
+
+summary.seqs(fasta=Exp2.trim.contigs.fasta, processors=64)
+count.groups(group=Exp2.contigs.groups)
+
+trim.seqs(fasta=Exp2.trim.contigs.fasta, oligos=~/symbio/db/references/primers_to_trim.oligos, minlength=303, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
+get.seqs(accnos=current, group=Exp2.contigs.groups)
+list.seqs(fasta=current)
+get.seqs(accnos=current, group=Exp2.contigs.groups)
+
+   ### At this point, I added COI references from Ela to the beginning of fasta file and group file, creating new files with prefix "Exp2a"
+
+summary.seqs(fasta=Exp2a.trim.contigs.trim.fasta)
+count.groups(group=Exp2.contigs.pick.groups)
+
+unique.seqs(fasta=Exp2a.trim.contigs.trim.fasta)
+count.seqs(name=Exp2a.trim.contigs.trim.names, group=Exp2a.contigs.pick.groups, compress=f)
+
+summary.seqs(fasta=current)
+summary.seqs(fasta=current, count=current)
+
+split.abund(fasta=current, count=current, cutoff=1)
+summary.seqs(fasta=current, count=current)
+
+align.seqs(fasta=Exp2a.trim.contigs.trim.unique.abund.fasta, reference=~/symbio/db/references/COI_references.fasta)
+summary.seqs(fasta=current)
+screen.seqs(fasta=Exp2a.trim.contigs.trim.unique.abund.align, count=Exp2a.trim.contigs.trim.abund.count_table, start=1, end=418, minlength=400, maxlength=418)
+rename.file(fasta=current, count=current, prefix=Exp2a_COI)
+remove.seqs(accnos=long.accnos, fasta=current, count=current)
+filter.seqs(fasta=current, vertical=T, trump=.)
+dist.seqs(fasta=Exp2a_COI.pick.filter.fasta, processors=64, cutoff=0.05)
+
+cluster(column=current, count=Exp2a_COI.pick.count_table, cutoff=0.03)
+bin.seqs(list=current, fasta=current, label=0.03)
+make.shared(list=current,count=current,label=0.03)
