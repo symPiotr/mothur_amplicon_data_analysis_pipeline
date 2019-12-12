@@ -169,20 +169,37 @@ count.groups(group=current)
 ##### MOTHUR - CONTIG PROCESSING ######
 
 ### Quality-trimming sequences
-trim.seqs(fasta=ML.trim.contigs.fasta, oligos=primers_to_trim.oligos, minlength=250, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
+trim.seqs(fasta=ML.trim.contigs.fasta, oligos=/mnt/matrix/symbio/db/references/primers_to_trim.oligos, minlength=250, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
     # Lots of parameters! You may want to google "mothur trim.seqs" to understand them!
     # The important file here is the list of primers to trim, primers_to_trim.oligos. This is how it looks:
-	#COI - BF3, BR2
+	####### COI
+	####### Our oligos used for the library preps:
+	#COIBF3_P5	ACACTCTTTCCCTACACGACGCTCTTCCGATCT---CCHGAYATRGCHTTYCCHCG
+	#COIBR2_P7	GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT---TCDGGRTGNCCRAARAAYCA
+
 	forward CCHGAYATRGCHTTYCCHCG
 	reverse TCDGGRTGNCCRAARAAYCA
 
-	#16S-mito - Chiar16SF, Chiar16SR
-	forward ARTYCAACATCGRGGTC
-	reverse CYGTRCDAAGGTAGCAWA
 
-	#16Sbact v4 region - 515F, 806R
+	###### mitochondrial 16S rRNA
+	####### Our oligos used for the library preps:
+	#Chiar16SR_P5	ACACTCTTTCCCTACACGACGCTCTTCCGATCT---CYGTRCDAAGGTAGCATA
+	#Chiar16SF_P7	GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT---ARTYCAACATCGRGGTC
+
+	forward CYGTRCDAAGGTAGCAWA
+	reverse ARTYCAACATCGRGGTC
+
+
+	###### bacterial 16S rRNA
+	####### Our oligos used for the library preps:
+	# 515F_P5	ACACTCTTTCCCTACACGACGCTCTTCCGATCT---GTGYCAGCMGCCGCGGTAA
+	# 806R_P7	GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT---GGACTACNVGGGTWTCTAAT
+
 	forward GTGYCAGCMGCCGCGGTAA
 	reverse GGACTACNVGGGTWTCTAAT
+
+
+
 
 ### Listing sequences retained in trimmed fasta file, and extracting them from the group file:
 list.seqs(fasta=current)
@@ -270,7 +287,7 @@ rename.file(fasta=current, count=current, prefix=ML_COI)
 ### Then, cluster!
 ### Then, construct summary lists and tables!
 dist.seqs(fasta=ML_COI.fasta, processors=16, cutoff=0.05)
-cluster(column=current, count=ML_COI.count_table, cutoff=0.03, method=average)
+cluster(column=current, count=ML_COI.count_table, cutoff=0.03, method=opti)
 bin.seqs(list=current, fasta=current, label=0.01)
     # Assigning sequences to OTUs based on 99% identity
 make.shared(list=current,count=current,label=0.01)
@@ -323,7 +340,7 @@ rename.file(fasta=current, count=current, taxonomy=current, prefix=ML_16S)
 
 ### Compute distance matrix, cluster, construct summary tables
 dist.seqs(fasta=ML_16S.fasta, processors=24, cutoff=0.05)
-cluster(column=current, count=ML_16S.count_table, cutoff=0.03, method=average)
+cluster(column=current, count=ML_16S.count_table, cutoff=0.03, method=opti)
 bin.seqs(list=current, fasta=current, label=0.03)
 make.shared(list=current, count=current, label=0.03)
 
