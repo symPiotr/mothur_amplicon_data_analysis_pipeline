@@ -1,0 +1,29 @@
+### These are the slightly edited commands that were used for the analysis of a few planthopper libraries.
+### In the first pass, we focused on the analysis of the COI data.
+
+get.current()
+make.file(inputdir=., type=fastq, prefix=DIC)
+make.contigs(file=DIC.file)
+trim.seqs(fasta=DIC.trim.contigs.fasta, oligos=/mnt/matrix/symbio/db/references/primers_to_trim.oligos, minlength=250, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
+list.seqs(fasta=DIC.trim.contigs.trim.fasta)
+get.seqs(accnos=DIC.trim.contigs.trim.accnos, group=current)
+summary.seqs(fasta=DIC.trim.contigs.fasta, processors=32)
+count.groups(group=DIC.contigs.pick.groups)
+count.groups(group=DIC.contigs.groups)
+unique.seqs(fasta=DIC.trim.contigs.trim.fasta)
+count.seqs(name=DIC.trim.contigs.trim.names, group=DIC.contigs.pick.groups, compress=f)
+
+
+get.current()
+split.abund(fasta=DIC.trim.contigs.trim.unique.fasta, count=DIC.trim.contigs.trim.count_table, cutoff=1)
+align.seqs(fasta=DIC.trim.contigs.trim.unique.abund.fasta, reference=DICreference.fas)
+      ### reference: a COI sequence of a single planthopper, with single gaps introduced every 50 or so bases.
+screen.seqs(fasta=DIC.trim.contigs.trim.unique.abund.align, count=DIC.trim.contigs.trim.abund.count_table, minlength=400)
+filter.seqs(fasta=DIC.trim.contigs.trim.unique.abund.good.align,vertical=T, trump=.)
+
+
+rename.file(fasta=current, count=current, prefix=DIC_DIC)
+dist.seqs(fasta=DIC_DIC.fasta, cutoff=0.1)
+cluster(column=current, count=DIC_DIC.count_table, cutoff=0.03)
+bin.seqs(list=DIC_DIC.opti_mcc.list, fasta=DIC_DIC.fasta, label=0.03)
+make.shared(list=DIC_DIC.opti_mcc.list, count=DIC_DIC.count_table, label=0.03)
