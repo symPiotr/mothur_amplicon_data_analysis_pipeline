@@ -6,35 +6,40 @@
 >>> Pooled libraries sequenced on a shared MiSeq v3 lane (2x300bp reads) at the Institute of Environmental Sciences
 >>> Data available on the IES cluster: /mnt/matrix/symbio/raw_data/20191109_MiSeq_first_run/
 
-
 #######################################
 ####### THE PIPELINE - SUMMARY ########
 
 For selected samples, we:
-	Copy reads to a working directory
-	Trim reads (trim_galore)
+	Copy compressed reads to a working directory, unpack them
+	If needed, trim reads using trim_galore
 	Assemble reads into contigs
-	Quality-screen reads
+	Quality-screen reads and trim primers
 	Select unique sequences and compute count table
-	Discard rare unique seqs
+	Discard rare unique sequences
 	Align reads to a reference, discard those that didn't align
 	[16S] Screen for chimeras
 	[16S] Assign taxonomy
-	Compute distance matrix, pick OTUs
-	Prepare OTU tables
+	Rename sequences - simplify names!
+	Compute distance matrix between sequences, pick OTUs
+	Prepare OTU and summary tables
 
 Example data that I am starting with: three libraries for Macrosteles laevis leafhopper individuals, prepped by Sandra and Monika. They attempted to amplify three genes:
 	Insect mitochondrial COI (primers BF3 & BR2)
-	Insect mitochondrial 16S rRNA (primers Chiar16SF and Chiar16SR, Marquina et al. 2018)
+	Insect mitochondrial 16S rRNA gene, v4 region (primers Chiar16SF and Chiar16SR, Marquina et al. 2018)
 	Bacterial 16S rRNA (primers 515F and 806R)
 ... but mito16S didn't amplify because of a critical mismatch in one of the primers. Then, these libraries contain the mixture of two products.
+
+In this particular example, reads (300 bp) are longer than the 16S-v4 region incl. primers (~292 bp). To avoid complications down the line, we may trim them. 
 
 
 #######################################
 ######## SETTING UP WORKSPACE #########
 
 ### Login to the cluster!
-ssh user.name@149.156.165.80 			# <- leskowiec
+ssh user.name@149.156.165.82			# <- fsm cluster. More memory, processors and hard disk space.
+# ... or ...
+ssh user.name@149.156.165.80 			# <- leskowiec cluster.
+
 
 ### Create working directory, perhaps in your home directory. Go there.
 cd ~
@@ -44,22 +49,29 @@ mkdir 20191112_test
 cd 20191112_test
 
 ### Select files for analysis.
-### Mothur can work with gzip-compressed files, but the last time I had some issues.
+### Mothur can work with gzip-compressed files, but the last time I tried that I had some issues.
 ### Hence, you might choose to copy selected files, for example to raw_reads folder in your work-dir, and uncompress them there.
 ### You may or may not want to rename the files.
 
 mkdir raw_reads
 cd raw_reads
 
-cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW1_S213_L001_R1_001.fastq.gz ./S-BTW1_R1.fastq.gz
-cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW1_S213_L001_R2_001.fastq.gz ./S-BTW1_R2.fastq.gz
-cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW2_S210_L001_R1_001.fastq.gz ./S-BTW2_R1.fastq.gz
-cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW2_S210_L001_R2_001.fastq.gz ./S-BTW2_R2.fastq.gz
-cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW3_S207_L001_R1_001.fastq.gz ./S-BTW3_R1.fastq.gz
-cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW3_S207_L001_R2_001.fastq.gz ./S-BTW3_R2.fastq.gz
+cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW1_S213_L001_R1_001.fastq.gz ./BTW1_R1.fastq.gz
+cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW1_S213_L001_R2_001.fastq.gz ./BTW1_R2.fastq.gz
+cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW2_S210_L001_R1_001.fastq.gz ./BTW2_R1.fastq.gz
+cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW2_S210_L001_R2_001.fastq.gz ./BTW2_R2.fastq.gz
+cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW3_S207_L001_R1_001.fastq.gz ./BTW3_R1.fastq.gz
+cp /home/piotr.lukasik/symbio/raw_data/20191109_MiSeq_first_run/S-BTW3_S207_L001_R2_001.fastq.gz ./BTW3_R2.fastq.gz
 
 gunzip *
-cd ..
+
+### If your reads are longer than some of your target amplicons, as in our example (300 bp reads, 292 bp 16S-v4 amplicons), it may be a good idea to trim the reads.
+### Removing the last 50 bases of reads, which tend to be low quality anyway, will help us avoid downstream problems.
+
+/mnt/matrix/symbio/bin/trim_galore --dont_gzip --hardtrim5 250 *fastq
+    # that should work from any location: you are specifying absolute path to the executable.
+    # OR if you have added /mnt/matrix/symbio/bin to your PATH, this should work ---
+trim_galore --dont_gzip --hardtrim5 250 *fastq
 
 ### Check cluster usage. Make sure it's not being used too heavily!
 ### My favorite tool is htop:
@@ -69,7 +81,7 @@ htop
 ### Start screen --- an interactive session which helps ensure that a broken network connection won't interrupt your analyses
 screen -S mothur_session
     # Other useful commands:
-	# Ctrl+a+d --- leave session;
+	# Ctrl+a, Ctrl+d --- leave session;
 	# screen -r <session_name OR session#> --- rejoin session;
 	# screen -rd <session_name OR session#> --- rejoin session which is listed as "attached", for example because the software hasn't yet realized that you lost connection ;
 	# screen -ls --- list running sessions;
@@ -77,47 +89,45 @@ screen -S mothur_session
 
 
 
-
 #######################################
 #### MOTHUR - SETUP, QC, TRIMMING #####
 
-### Within a screen, start mothur!
+### Within a screen, move to your working directory
+### Then, start mothur!
 mothur
 
-### Set working directory
-set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
-
-### Check what are the working directories. This is important --- this is where the software
+### List the current working directories. This is important --- this is where the software
 ### will be looking for input files and saving output files! You can change the directory at any point
-### using the previous command.
+### using the next command.
 get.current()
+
+### Set working directory... initially for the folder with reads:
+set.dir(input=~/amplicon_analyses/20191112_test/raw_reads, output=~/amplicon_analyses/20191112_test/raw_reads)
 
 ### Assemble forward and reverse reads into contigs
 ### First, create the file with a list of libraries and files.
 make.file(inputdir=~/amplicon_analyses/20191112_test/raw_reads, type=fastq, prefix=ML)
 
-### You may want to see how the file looks, and edit it.
-system(cat ~/amplicon_analyses/20191112_test/ML.files)
+### You probably want to see how the file looks, and edit names, remove some of the libraries, etc.
+system(cat ~/amplicon_analyses/20191112_test/raw_reads/ML.files)
     # Hopefully, lines will go like this ---
-        # S-BTW1	S-BTW1_R1.fastq	S-BTW1_R2.fastq
-    # You may want to edit your files manually to avoid dashes within sample names, as this would create problems downstream.
-    # In TextWrangler, File > Open from FTP/SFTP Server;
-    # Then Search > Replace; Select "grep" as the option;
-    # Then ^S-BTW >>> S_BTW
+        # BTW1	BTW1_R1.fastq	BTW1_R2.fastq
+    # You may want to edit your files manually to avoid dashes within sample names, as this would create problems downstream. You may want to change library names, remove some libraries, add some libraries...
+    # In particular, if you have trimmed and pre-trimmed reads in the same folder, you may want to make sure that the libraries are linked to the trimmed fastq files:
+
+### Change working directory, so that any subsequent files are written into your work_dir:
+set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
 
 ### Join forward and reverse reads into contigs!
-make.contigs(file=ML.files)
+make.contigs(file=/home/piotr.lukasik/amplicon_analyses/20191112_test/raw_reads/ML.files)
     # Output File Names: 
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.trim.contigs.fasta
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.scrap.contigs.fasta
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.contigs.report
 	# /home/piotr.lukasik/amplicon_analyses/20191112_test/ML.contigs.groups
-    # let's look at them!
+    # let's look at them! Make sure that you do understand the organization of the fasta file and the group file!
 
-### Re-set working directory 
-set.dir(input=~/amplicon_analyses/20191112_test, output=~/amplicon_analyses/20191112_test)
-
-### Let's disconnect from the screen where mothur runs
+### Let's now disconnect from the screen where mothur runs...
     # Ctrl+a+d
 
 ### And look at a subset of original reads and the assembled contigs. 
@@ -128,41 +138,18 @@ head -20 raw_reads/S-BTW1_R2.fastq
 head -20 ML.trim.contigs.fasta
     # displays the first five contigs.
 
-### Paste reads into CodonCode Aligner, assemble reads + contigs corresponding to the same read pair ... not great.
-### Mothur uses read quality information to a limited extent; the information that certain regions are of low quality becomes lost.
-### But a bigger problem is that for our 16S rRNA v4 contigs, reads are longer than the contigs - and so they are reading into the adapter.
-### It would be hard to deal with. A possible approach would be trimming the reads --- eliminating the last 20-50 bases from each.
-### We can do this using software called trim_galore.
-### The link to trim_galore executable is in the folder /mnt/matrix/symbio/bin, which you may want to add to your PATH. ### Ask Piotr if you need help with that!
-
-### Trim reads using trim_galore:
-cd raw_reads
-trim_galore --dont_gzip --hardtrim5 250 *fastq
-    # will only work if trim_galore is in a folder in your PATH!
-/mnt/matrix/symbio/bin/trim_galore --dont_gzip --hardtrim5 250 *fastq
-    # that should work from any location: you are specifying absolute path to the executable.
-
-
-### In TextWrangler, edit the sample-file info (ML.files) so that the samples are linked to the newly trimmed fastq files:
-### Also, we have been changing the input directory more than once, which can create confusion;
-### Hence, it might be safer if in your ML.files you specify the full path to your reads!
-    # Hopefully, lines will now look like this ---
-        #S_BTW1	~/amplicon_analyses/20191112_test/raw_reads/S-BTW1_R1.250bp_5prime.fq	~/amplicon_analyses/20191112_test/raw_reads/S-BTW1_R2.250bp_5prime.fq
-
-
-### get back to your mothur screen, and re-make contigs!
-make.contigs(file=ML.files)
+### Paste reads into CodonCode Aligner, assemble reads + contigs corresponding to the same read pair ... Make sure that you understand what is what, and that it all makes sense!
 
 ### Display the summary of sequences
 summary.seqs(fasta=ML.trim.contigs.fasta)
-    # or alternatively,
+    # or alternatively, at any point you can refer to the last saved file of any given type, "current"
+    # ---> as indicated by get.current()
 summary.seqs(fasta=current)
    
 ### See how many sequences there are in each library
 count.groups(group=ML.contigs.groups)
     # or alternatively,
 count.groups(group=current)
-
 
 
 #######################################
@@ -197,8 +184,6 @@ trim.seqs(fasta=ML.trim.contigs.fasta, oligos=/mnt/matrix/symbio/db/references/p
 
 	forward GTGYCAGCMGCCGCGGTAA
 	reverse GGACTACNVGGGTWTCTAAT
-
-
 
 
 ### Listing sequences retained in trimmed fasta file, and extracting them from the group file:
