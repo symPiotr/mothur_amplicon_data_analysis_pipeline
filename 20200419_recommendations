@@ -1,0 +1,110 @@
+##### In the latest data run --- /mnt/matrix/symbio/raw_data/20200324_MiSeq_rerun/ (MiSeq v3 2x260 bp) --- we ended up with suboptimal data:
+#   >>> much fewer reads than expected
+#   >>> low quality of the second read
+
+##### Most amplicon libraries in that run comprised both COI (primers BF3-BR2) and 16S v4 (515F-806R) products.
+I have split them into files corresponding to different products (script to be published). See /mnt/matrix/symbio/temp/ for data corresponding to different projects.
+
+### Below, I am providing commands/suggestions for data analysis, modified relative to my original protocol.
+
+
+################
+#### COI #######
+################
+# ---> I recommend using files with reads corresponding to BF3-BR2 product
+# ---> copy them to a separate working folder
+
+make.file(inputdir=., type=fastq, prefix=TAR)
+make.contigs(file=TAR.file)
+trim.seqs(fasta=TAR.trim.contigs.fasta, oligos=/mnt/matrix/symbio/db/references/primers_to_trim.oligos, minlength=250, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
+
+# ---> Because of low quality of the second read in that lane, consider working only on first read
+# Instead of doing make.contigs(), adjust trim.seqs to work only with single reads. You may need to adjust names of subsequent files
+
+
+list.seqs(fasta=TAR.trim.contigs.trim.fasta)
+get.seqs(accnos=TAR.trim.contigs.trim.accnos, group=current)
+summary.seqs(fasta=TAR.trim.contigs.fasta, processors=16)
+count.groups(group=TAR.contigs.pick.groups)
+unique.seqs(fasta=TAR.trim.contigs.trim.fasta)
+count.seqs(name=TAR.trim.contigs.trim.names, group=TAR.contigs.pick.groups, compress=f)
+
+get.current()
+split.abund(fasta=DIC.trim.contigs.trim.unique.fasta, count=DIC.trim.contigs.trim.count_table, cutoff=1)
+align.seqs(fasta=DIC.trim.contigs.trim.unique.abund.fasta, reference=REFERENCE)
+      ### REFERENCE: a COI sequence of a single tardigrade, with single gaps introduced every 50 or so bases.
+screen.seqs(fasta=DIC.trim.contigs.trim.unique.abund.align, count=DIC.trim.contigs.trim.abund.count_table, minlength=400)
+filter.seqs(fasta=DIC.trim.contigs.trim.unique.abund.good.align,vertical=T, trump=.)
+
+# ---> At this point, I would recommend extracting the COI sequence IDs corresponding to the most abundant variant in each sample 
+# ---> from the last count_table, and extracting the sequences from the last fasta file.
+
+
+
+
+########################
+### 16S - v4 data ######
+########################
+
+# You can work either with original fastq.gz files, or extracted 16S_v4 reads
+
+# The first steps should be the same as for COI. You should be able to follow the regular protocol rather than focusing on the first read
+
+# ---> The links below are to v138 databases. I haven't tested them yet... in case of problems, consider using an older v132.
+# ---> In the step above, consider using the much smaller silva.seed_v138.align for test runs
+
+### Align 16S sequences against a SILVA db
+align.seqs(fasta=TAR16S.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/silva.nr_v138.align, processors=20)
+
+
+
+### Get sequence alignment info!
+summary.seqs(fasta=TAR16S.trim.contigs.trim.unique.abund.align)
+
+# ---> In the above summary, check where the majority of sequences start and end. If needed, change values "start" and "end" in the formula below.
+
+### Remove unaligned
+screen.seqs(fasta=TAR16S.trim.contigs.trim.unique.abund.align, count=TAR16S.trim.contigs.trim.abund.count_table, start=13862, end=23444, minlength=220)
+
+### Remove gaps
+filter.seqs(fasta=current, vertical=T, trump=.)
+
+### Redo unique.seqs
+unique.seqs(fasta=TAR16S.trim.contigs.trim.unique.abund.good.filter.fasta, count=TAR16S.trim.contigs.trim.abund.good.count_table)
+    # TAR16S.trim.contigs.trim.unique.abund.good.filter.count_table
+    # TAR16S.trim.contigs.trim.unique.abund.good.filter.unique.fasta
+
+
+### Identify and remove chimaeric sequences using UChime
+chimera.uchime(fasta=TAR16S.trim.contigs.trim.unique.abund.good.filter.unique.fasta, reference=self, count=TAR16S.trim.contigs.trim.unique.abund.good.filter.count_table, dereplicate=f, mindiv=0.35, processors=20, minh=0.5, xn=3)
+remove.seqs(accnos=current, fasta=current, count=current)
+
+
+# ---> below, you may chose to switch between the new v138 and the older, tested v132...
+# ---> as well as between larger "nr" database and smaller "seed" database.
+
+### Classify all sequences by taxonomy
+classify.seqs(fasta=current, count=current, reference=/mnt/matrix/symbio/db/silva.nr_v138.align, taxonomy=/mnt/matrix/symbio/db/silva.nr_v138.tax, cutoff=80)
+
+remove.lineage(fasta=current, count=current, taxonomy=current, taxon=Chloroplast-Mitochondria-Archaea-Eukaryota)
+
+summary.tax(taxonomy=current, count=current)
+
+### Simplify file names
+rename.file(fasta=current, count=current, taxonomy=current, prefix=TAR16S_16S)
+
+### Compute distance matrix, cluster, construct summary tables
+dist.seqs(fasta=TAR16S_16S.fasta, processors=24, cutoff=0.05)
+
+# ---> there are multiple clustering algorithms to be used below. "opti" is the default,
+# ---> but you may want to switch to "average", or one of the others.
+
+cluster(column=current, count=TAR16S_16S.count_table, cutoff=0.03, method=opti)
+bin.seqs(list=current, fasta=current, label=0.03)
+make.shared(list=current, count=current, label=0.03)
+
+### Classifying OTUs
+classify.otu(list=current,count=current,taxonomy=current, label=0.03)
+
+### Extracting representative sequences
+get.oturep(column=current, list=current, fasta=current, count=current, cutoff=0.03)
