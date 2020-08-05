@@ -1,0 +1,292 @@
+Here I am providing a general overview of the data analysis steps that I recommend for microbiome samples
+
+### Raw data from the latest run (20200730):
+/mnt/matrix/symbio/raw_data/20200730_MiSeq/
+
+      piotr.lukasik@fsm:~$ls -l ~/symbio/raw_data/20200730_MiSeq/
+      total 8440960
+      -rw-r--r-- 1 piotr.lukasik users  16262810 Jul 30 10:38 A-ACACON_S234_L001_R1_001.fastq.gz
+      -rw-r--r-- 1 piotr.lukasik users  23937299 Jul 30 10:38 A-ACACON_S234_L001_R2_001.fastq.gz
+      -rw-r--r-- 1 piotr.lukasik users     23587 Jul 30 10:38 A-BLANK-extr_S260_L001_R1_001.fastq.gz
+      -rw-r--r-- 1 piotr.lukasik users     29070 Jul 30 10:38 A-BLANK-extr_S260_L001_R2_001.fastq.gz
+      ...
+
+### Data from the 20200730 run, split by project and target type using my split_amplicon_libs.py script:
+/mnt/matrix/symbio/split_data/20200730_MiSeq/
+
+      piotr.lukasik@fsm:~$ ls -l ~/symbio/split_data/20200730_MiSeq/
+      total 416
+      drwxr-xr-x 2 piotr.lukasik users 106496 Jul 30 15:25 AGA
+      drwxr-xr-x 2 piotr.lukasik users  65536 Jul 30 15:48 Ania
+      drwxr-xr-x 2 piotr.lukasik users  53248 Jul 30 15:53 Hamed
+      drwxr-xr-x 2 piotr.lukasik users  16384 Jul 30 15:34 Monika
+      drwxr-xr-x 2 piotr.lukasik users  98304 Jul 30 15:56 Tardigrades
+      drwxr-xr-x 2 piotr.lukasik users  12288 Jul 30 16:15 Voles
+      
+      piotr.lukasik@fsm:~$ ls -l ~/symbio/split_data/20200730_MiSeq/Voles/ | head
+      total 1253888
+      -rw-r--r-- 1 piotr.lukasik users  7972107 Jul 30 15:29 16S-V1V2_V_1033_R1.fastq
+      -rw-r--r-- 1 piotr.lukasik users  7961545 Jul 30 15:29 16S-V1V2_V_1033_R2.fastq
+      -rw-r--r-- 1 piotr.lukasik users  8729224 Jul 30 15:30 16S-V1V2_V_1129_R1.fastq
+      -rw-r--r-- 1 piotr.lukasik users  8717050 Jul 30 15:30 16S-V1V2_V_1129_R2.fastq
+      ...
+      
+ 
+### What to do then?
+I recommend analysing data for different regions separately. 
+16S V4... then V3V4 ... then V1V2...
+Start from copying the selected set of samples to your analysis folder.
+
+Note that in the case of V4, because reads are longer than the targeted region, we need to start from clipping them to ~250 bp. 
+trim_galore --dont_gzip --hardtrim5 250 *fastq
+THIS STEP IS NOT NECESSARY FOR OTHER REGIONS!
+
+
+#######################################
+#### MOTHUR - SETUP, QC, TRIMMING #####
+
+### Start a screen, move to your working directory
+### Then, start mothur!
+mothur
+
+### List the current working directories. This is important --- this is where the software
+### will be looking for input files and saving output files! You can change the directory at any point
+### using the next command.
+get.current()
+
+### Set working directory... initially for the folder with reads:
+set.dir(input=your_directory, output=your_directory)
+
+### Assemble forward and reverse reads into contigs
+### First, create the file with a list of libraries and files.
+make.file(inputdir=your_directory, type=fastq, prefix=ML)
+
+### You probably want to see how the file looks, and edit names, remove some of the libraries, etc.
+system(cat your_directory/ML.files)
+    # Hopefully, lines will go like this ---
+        # BTW1	BTW1_R1.fastq	BTW1_R2.fastq
+    # You may want to edit your files manually to avoid dashes within sample names, as this would create problems downstream. You may want to change library names, remove some libraries, add some libraries...
+    # In particular, if you have trimmed and pre-trimmed reads in the same folder, you may want to make sure that the libraries are linked to the trimmed fastq files:
+
+### Join forward and reverse reads into contigs!
+make.contigs(file=your_directory/ML.files)
+    # Output File Names: 
+
+
+
+
+
+
+
+
+
+
+### And look at a subset of original reads and the assembled contigs. 
+head -20 raw_reads/S-BTW1_R1.fastq
+    # displays the first five R1 reads ...
+head -20 raw_reads/S-BTW1_R2.fastq
+    # displays the first five R2 reads ...
+head -20 ML.trim.contigs.fasta
+    # displays the first five contigs.
+
+### Paste reads into CodonCode Aligner, assemble reads + contigs corresponding to the same read pair ... Make sure that you understand what is what, and that it all makes sense!
+
+### Display the summary of sequences
+summary.seqs(fasta=ML.trim.contigs.fasta)
+    # or alternatively, at any point you can refer to the last saved file of any given type, "current"
+    # ---> as indicated by get.current()
+summary.seqs(fasta=current)
+   
+### See how many sequences there are in each library
+count.groups(group=ML.contigs.groups)
+    # or alternatively,
+count.groups(group=current)
+
+
+#######################################
+##### MOTHUR - CONTIG PROCESSING ######
+
+### Quality-trimming sequences
+trim.seqs(fasta=ML.trim.contigs.fasta, oligos=/mnt/matrix/symbio/db/references/primers_to_trim.oligos, minlength=250, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
+    # Lots of parameters! You may want to google "mothur trim.seqs" to understand them!
+    # The important file here is the list of primers to trim, primers_to_trim.oligos. This is how it looks:
+	####### COI
+	####### Our oligos used for the library preps:
+	#COIBF3_P5	ACACTCTTTCCCTACACGACGCTCTTCCGATCT---CCHGAYATRGCHTTYCCHCG
+	#COIBR2_P7	GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT---TCDGGRTGNCCRAARAAYCA
+
+	forward CCHGAYATRGCHTTYCCHCG
+	reverse TCDGGRTGNCCRAARAAYCA
+
+
+	###### mitochondrial 16S rRNA
+	####### Our oligos used for the library preps:
+	#Chiar16SR_P5	ACACTCTTTCCCTACACGACGCTCTTCCGATCT---CYGTRCDAAGGTAGCATA
+	#Chiar16SF_P7	GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT---ARTYCAACATCGRGGTC
+
+	forward CYGTRCDAAGGTAGCAWA
+	reverse ARTYCAACATCGRGGTC
+
+
+	###### bacterial 16S rRNA
+	####### Our oligos used for the library preps:
+	# 515F_P5	ACACTCTTTCCCTACACGACGCTCTTCCGATCT---GTGYCAGCMGCCGCGGTAA
+	# 806R_P7	GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT---GGACTACNVGGGTWTCTAAT
+
+	forward GTGYCAGCMGCCGCGGTAA
+	reverse GGACTACNVGGGTWTCTAAT
+
+
+### Listing sequences retained in trimmed fasta file, and extracting them from the group file:
+list.seqs(fasta=current)
+get.seqs(accnos=current, group=current)
+    # or alternatively,
+list.seqs(fasta=ML.trim.contigs.trim.fasta)
+get.seqs(accnos=ML.trim.contigs.trim.accnos, group=ML.contigs.groups)
+
+### Get basic info about the sequences!
+summary.seqs(fasta=ML.trim.contigs.trim.fasta)
+
+### Check how the read numbers in libraries have changed!
+count.groups(group=ML.contigs.groups)
+    # before trimming...
+count.groups(group=ML.contigs.pick.groups)
+    # after trimming...
+   
+### Ensure that the number of removed reads is reasonable --- or consider adjusting your parameters!
+
+### OPTIONAL: if you are dealing with many files, you might want to select libraries for analysis from larger datasets
+# get.groups(group=ML.contigs.pick.groups, fasta=ML.trim.contigs.trim.fasta, groups=PL301-PL302-TETLON-...)
+
+### OPTIONAL: at any point, you might choose to merge files from different analyses
+# merge.files(input=samples_first_run.trim.contigs.trim.fasta-samples_second_run.trim.contigs.trim.fasta, output=populations.fasta)
+# merge.files(input=samples_first_run.contigs.pick.groups-samples_second_run.trim.contigs.trim.groups, output=populations.groups)
+
+
+### Pick unique sequences
+### This is an important step! Google "mothur unique.seqs"?
+unique.seqs(fasta=ML.trim.contigs.trim.fasta)
+
+### Generate count_table = a unique sequence table
+### This is an important step! Google?
+count.seqs(name=ML.trim.contigs.trim.names, group=ML.contigs.pick.groups, compress=f)
+
+### Check the sequences, with and without group file!
+summary.seqs(fasta=ML.trim.contigs.trim.unique.fasta)
+summary.seqs(fasta=ML.trim.contigs.trim.unique.fasta, count=ML.trim.contigs.trim.count_table)
+
+### Count sequences in each library, this time using the count_table as input
+count.groups(count=ML.trim.contigs.trim.count_table)
+
+### I encourage dicarding unique genotypes present only once in the dataset (singletons)
+split.abund(fasta=ML.trim.contigs.trim.unique.fasta, count=ML.trim.contigs.trim.count_table, cutoff=1)
+
+### Get sequence and library stats!
+summary.seqs(fasta=current, count=current)
+count.groups(count=current)
+
+
+
+####################################################
+### MOTHUR: COI data - alignments, OTU picking.. ###
+
+### First, let's try to extract M. laevis COI sequences
+
+### Align sequences against a complete MLAE mitogenome!
+### That might take a while.
+align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/references/mito_MLAE.fasta, processors=16)
+   # COI alignment region expected: 2578-2995
+   # 16S alignment region expected: 13487-1382
+   
+   # Consider using other references:
+   	/mnt/matrix/symbio/db/references/mito16S_MACQUA.fasta (mitochondrial 16S rRNA of Macrosteles quadrilineatus)
+	/mnt/matrix/symbio/db/references/COI_MACQUA.fasta (mitochondrial COI of Macrosteles quadrilineatus)
+
+### Now, let's see how the sequences have aligned
+summary.seqs(fasta=ML.trim.contigs.trim.unique.abund.align)
+
+### Let's remove those unaligned
+screen.seqs(fasta=ML.trim.contigs.trim.unique.abund.align, count=ML.trim.contigs.trim.abund.count_table, start=2578, end=2995, minlength=400)
+
+summary.seqs(fasta=current, count=current)
+count.groups(count=current)
+
+### Filter.seqs will remove all empty (dash-only) columns from the alignment fasta file
+filter.seqs(fasta=current, vertical=T, trump=.)
+
+######## It might be helpful to now simplify file names!
+rename.file(fasta=current, count=current, prefix=ML_COI)
+
+
+### Finally, OTU picking for these COI sequences
+### Compute distance matrix across sequences
+### Then, cluster!
+### Then, construct summary lists and tables!
+dist.seqs(fasta=ML_COI.fasta, processors=16, cutoff=0.05)
+cluster(column=current, count=ML_COI.count_table, cutoff=0.03, method=opti)
+bin.seqs(list=current, fasta=current, label=0.01)
+    # Assigning sequences to OTUs based on 99% identity
+make.shared(list=current,count=current,label=0.01)
+    # Create a 99% OTU table.
+
+### Look at the resulting files!
+
+### Get a representative sequence for each OTU!
+### The command is not working at the moment - TO BE FIXED!
+# get.oturep(column=current, list=current, fasta=current, cutoff=0.01)
+
+
+
+
+####################################################
+### MOTHUR: 16S data - alignments, OTU picking.. ###
+
+### Align 16S sequences against a SILVA db
+align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, processors=20)
+
+### Get sequence alignment info!
+summary.seqs(fasta=ML.trim.contigs.trim.unique.abund.align)
+
+### Remove unaligned
+screen.seqs(fasta=ML.trim.contigs.trim.unique.abund.align, count=ML.trim.contigs.trim.abund.count_table, start=13862, end=23444, minlength=220)
+
+### Remove gaps
+filter.seqs(fasta=current, vertical=T, trump=.)
+
+### Redo unique.seqs
+unique.seqs(fasta=ML.trim.contigs.trim.unique.abund.good.filter.fasta, count=ML.trim.contigs.trim.abund.good.count_table)
+    # ML.trim.contigs.trim.unique.abund.good.filter.count_table
+    # ML.trim.contigs.trim.unique.abund.good.filter.unique.fasta
+
+
+### Identify and remove chimaeric sequences using UChime
+chimera.uchime(fasta=ML.trim.contigs.trim.unique.abund.good.filter.unique.fasta, reference=self, count=ML.trim.contigs.trim.unique.abund.good.filter.count_table, dereplicate=f, mindiv=0.35, processors=20, minh=0.5, xn=3)
+remove.seqs(accnos=current, fasta=current, count=current)
+
+
+### Classify the sequences by taxonomy
+classify.seqs(fasta=current, count=current, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, taxonomy=/mnt/matrix/symbio/db/silva.seed_v132.tax, cutoff=80)
+
+remove.lineage(fasta=current, count=current, taxonomy=current, taxon=Chloroplast-Mitochondria-Archaea-Eukaryota)
+
+summary.tax(taxonomy=current, count=current)
+
+### Simplify file names
+rename.file(fasta=current, count=current, taxonomy=current, prefix=ML_16S)
+
+### Compute distance matrix, cluster, construct summary tables
+dist.seqs(fasta=ML_16S.fasta, processors=24, cutoff=0.05)
+cluster(column=current, count=ML_16S.count_table, cutoff=0.03, method=opti)
+bin.seqs(list=current, fasta=current, label=0.03)
+make.shared(list=current, count=current, label=0.03)
+
+
+### Classifying OTUs
+classify.otu(list=current,count=current,taxonomy=current, label=0.03)
+
+### Extracting representative sequences
+get.oturep(column=current, list=current, fasta=current, count=current, cutoff=0.01)
+
+
+ 
+ 
