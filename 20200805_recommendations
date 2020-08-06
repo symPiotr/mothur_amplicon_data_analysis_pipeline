@@ -1,6 +1,12 @@
-Here I am providing a general overview of the data analysis steps that I recommend for microbiome samples
+This is a general overview of the amplicon data analysis steps using mothur
+that I recommend for the vole microbiome samples (sequencing run: 20200730_MiSeq):
 
-### Raw data from the latest run (20200730):
+
+########################################
+####### The 20200730 MiSeq run  ########
+########################################
+
+### The raw data from the latest run (20200730) is available in the following folder:
 /mnt/matrix/symbio/raw_data/20200730_MiSeq/
 
       piotr.lukasik@fsm:~$ls -l ~/symbio/raw_data/20200730_MiSeq/
@@ -11,7 +17,41 @@ Here I am providing a general overview of the data analysis steps that I recomme
       -rw-r--r-- 1 piotr.lukasik users     29070 Jul 30 10:38 A-BLANK-extr_S260_L001_R2_001.fastq.gz
       ...
 
-### Data from the 20200730 run, split by project and target type using my split_amplicon_libs.py script:
+### I have separated the data from the 20200730 run, by project and target type, using my split_amplicon_libs.py script
+[available at: https://github.com/symPiotr/split_amplicon_libs].
+### The numbers of reads for different projects are as follows:
+
+      Project 	Sample_ct	COI-BF3BR2	16S-v4	16S-V1V2	16S-V3V4	ITS5.8	ITS2  	Unclass'd	Total
+      Agnieszka	164   	101210	2883760	458505	0     	0     	0     	467485	3910960
+      Ania   	98    	86663 	2180303	726986	0     	31104 	21871 	371607	3418534
+      Monika	21    	11235 	566796	3     	0       	0     	0     	76133 	654167
+      Hamed 	64    	5632  	1784047	718416	0     	244989	889809	456078	4098971
+      Tardigrades	145   	215880	2529067	839392	2     	87445 	190857	590006	4452649
+      Voles 	16     	23    	404823	212555	222884	1     	2     	133123	973411
+      UndeterminedNA    	3323  	167534	119474	2165  	4055  	16229 	624538	937318
+      Total 	508   	423966	10516330	3075331	225051	367594	1118768	2718970	18446010
+
+### And for the "Voles" project, specifically (data for COI and ITS regions were combined - there were very few reads).
+
+      Sample	v4	v1-v2	v3-v4	Other Uncl.	Total
+      V_1033	22461	12102	12884	0	7419	54866
+      V_1129	21955	13251	12993	0	7894	56093
+      V_1131	21171	10991	12770	0	6957	51889
+      V_1133	21551	11894	14230	1	7743	55419
+      V_1136	29008	16496	15162	1	9151	69818
+      V_1165	28028	12348	14604	1	8640	63621
+      V_1215	30274	13891	15721	1	9183	69070
+      V_1219	33850	19063	16998	0	10993	80904
+      V_1230	27078	13277	16999	1	9101	66456
+      V_1241	33307	17760	17054	0	10815	78936
+      V_1242	29477	16003	15978	3	9593	71054
+      V_1243	34086	18941	18673	17	11788	83505
+      V_1253	39880	20634	21733	0	13406	95653
+      V_1254	32686	15893	17077	0	10431	76087
+      V_Neg_PCR	8	8	5	1	6	28
+      V_Neg_index	3	3	3	0	3	12
+
+### The data split using the script is available at:
 /mnt/matrix/symbio/split_data/20200730_MiSeq/
 
       piotr.lukasik@fsm:~$ ls -l ~/symbio/split_data/20200730_MiSeq/
@@ -22,7 +62,10 @@ Here I am providing a general overview of the data analysis steps that I recomme
       drwxr-xr-x 2 piotr.lukasik users  16384 Jul 30 15:34 Monika
       drwxr-xr-x 2 piotr.lukasik users  98304 Jul 30 15:56 Tardigrades
       drwxr-xr-x 2 piotr.lukasik users  12288 Jul 30 16:15 Voles
-      
+
+### and for vole samples, specifically, at:
+/mnt/matrix/symbio/split_data/20200730_MiSeq/Voles/
+
       piotr.lukasik@fsm:~$ ls -l ~/symbio/split_data/20200730_MiSeq/Voles/ | head
       total 1253888
       -rw-r--r-- 1 piotr.lukasik users  7972107 Jul 30 15:29 16S-V1V2_V_1033_R1.fastq
@@ -33,17 +76,25 @@ Here I am providing a general overview of the data analysis steps that I recomme
       
  
 ### What to do then?
-I recommend analysing data for different regions separately. 
-16S V4... then V3V4 ... then V1V2...
-Start from copying the selected set of samples to your analysis folder.
+# I recommend analysing data for different regions separately. 
+# 16S V4... then V3V4 ... then V1V2...
+# In all cases, start from copying the selected set of samples to your analysis folder.
 
-Note that in the case of V4, because reads are longer than the targeted region, we need to start from clipping them to ~250 bp. 
+### Note that for V4 data, because reads are longer than the targeted region, we need to start from clipping them to ~250 bp. 
+# I like doing this using trim_galore:
 trim_galore --dont_gzip --hardtrim5 250 *fastq
-THIS STEP IS NOT NECESSARY FOR OTHER REGIONS!
+# But because of problems configuring trim_galore and cutadapt on the clusters,
+# you may want to just copy files that I processed:
+/home/piotr.lukasik/data_V/V4/*fq
+
+### THIS STEP IS NOT NECESSARY FOR OTHER REGIONS!
+
+
 
 
 #######################################
 #### MOTHUR - SETUP, QC, TRIMMING #####
+#######################################
 
 ### Start a screen, move to your working directory
 ### Then, start mothur!
@@ -54,19 +105,30 @@ mothur
 ### using the next command.
 get.current()
 
-### Set working directory... initially for the folder with reads:
+### OPTIONAL: You may want to set a different working directory... initially for the folder with reads:
 set.dir(input=your_directory, output=your_directory)
 
-### Assemble forward and reverse reads into contigs
-### First, create the file with a list of libraries and files.
+### Assemble forward and reverse reads into contigs. You will need to tell the software which R1 and R2 fastq file
+### corresponds to which library. If your files unusual names (like, after trimming of the first bases with trim_galore),
+### you may need to do this manually. Otherwise, you may be able to create the file with a list of libraries
+### and files automatically. In the example below, I arbitrarily set "ML" as the prefix of the analysis name. Feel free
+### to provide your own!
 make.file(inputdir=your_directory, type=fastq, prefix=ML)
+
+# The file should look like this ---
+
+      piotr.lukasik@fsm:~/data_V/V4$ cat ML.files
+      V1033 	16S-v4_V_1033_R1.250bp_5prime.fq	16S-v4_V_1033_R2.250bp_5prime.fq
+      V1136 	16S-v4_V_1136_R1.250bp_5prime.fq	16S-v4_V_1136_R2.250bp_5prime.fq
+      V1230 	16S-v4_V_1230_R1.250bp_5prime.fq	16S-v4_V_1230_R2.250bp_5prime.fq
+      ...
+
 
 ### Join forward and reverse reads into contigs!
 make.contigs(file=ML.files, processors=16)
     # Output File Names:
     ML.trim.contigs.fasta
     ML.contigs.groups
-
 
 summary.seqs(fasta=ML.trim.contigs.fasta)
     # or alternatively, at any point you can refer to the last saved file of any given type, "current"
@@ -79,18 +141,21 @@ count.groups(group=ML.contigs.groups)
 count.groups(group=current)
 
 
+
 #######################################
 ##### MOTHUR - CONTIG PROCESSING ######
+#######################################
 
 ### Quality-trimming sequences
 trim.seqs(fasta=ML.trim.contigs.fasta, oligos=/mnt/matrix/symbio/db/references/primers_to_trim_VarLenIns.oligos, minlength=250, maxlength=500, maxambig=0, maxhomop=10, pdiffs=2)
     # Lots of parameters! You may want to google "mothur trim.seqs" to understand them!
+    # In particular, consider adjusting "minlength" and "maxlength" parameters for your specific run! 
     # The important file here is the list of primers to trim, primers_to_trim_VarLenIns.oligos.
 
 ### Listing sequences retained in trimmed fasta file, and extracting them from the group file:
 list.seqs(fasta=current)
 get.seqs(accnos=current, group=current)
-    # or alternatively,
+    # or alternatively, you can do:
 list.seqs(fasta=ML.trim.contigs.trim.fasta)
 get.seqs(accnos=ML.trim.contigs.trim.accnos, group=ML.contigs.groups)
 
@@ -113,7 +178,7 @@ count.groups(group=ML.contigs.pick.groups)
 # merge.files(input=samples_first_run.contigs.pick.groups-samples_second_run.trim.contigs.trim.groups, output=populations.groups)
 
 
-### Pick unique sequences
+### Demultiplexing time! Pick unique sequences!
 ### This is an important step! Google "mothur unique.seqs"?
 unique.seqs(fasta=ML.trim.contigs.trim.fasta)
 
@@ -140,9 +205,11 @@ count.groups(count=current)
 
 ####################################################
 ### MOTHUR: 16S data - alignments, OTU picking.. ###
+####################################################
 
 ### Align 16S sequences against a SILVA db
 align.seqs(fasta=ML.trim.contigs.trim.unique.abund.fasta, reference=/mnt/matrix/symbio/db/silva.seed_v138.align, processors=16)
+# Note: for production runs, you may want to use a more comprehensive alignment ref: /mnt/matrix/symbio/db/silva.nr_v138.align
 
 ### Get sequence alignment info!
 summary.seqs(fasta=ML.trim.contigs.trim.unique.abund.align)
@@ -165,13 +232,14 @@ remove.seqs(accnos=current, fasta=current, count=current)
 
 
 ### Classify the sequences by taxonomy
-classify.seqs(fasta=current, count=current, reference=/mnt/matrix/symbio/db/silva.seed_v132.align, taxonomy=/mnt/matrix/symbio/db/silva.seed_v132.tax, cutoff=80)
+classify.seqs(fasta=current, count=current, reference=/mnt/matrix/symbio/db/silva.seed_v138.align, taxonomy=/mnt/matrix/symbio/db/silva.seed_v138.tax, cutoff=80)
+# Note: for production runs, you may want to use a more comprehensive references: /mnt/matrix/symbio/db/silva.nr_v138.align and /mnt/matrix/symbio/db/silva.nr_v138.tax
 
 remove.lineage(fasta=current, count=current, taxonomy=current, taxon=Chloroplast-Mitochondria-Archaea-Eukaryota)
 
 summary.tax(taxonomy=current, count=current)
 
-### Simplify file names
+### Simplify file names. They are far too long by this point to be reasonable!
 rename.file(fasta=current, count=current, taxonomy=current, prefix=ML_16S)
 
 ### Compute distance matrix, cluster, construct summary tables
@@ -186,3 +254,7 @@ classify.otu(list=current,count=current,taxonomy=current, label=0.03)
 
 ### Extracting representative sequences
 get.oturep(column=current, list=current, fasta=current, count=current, cutoff=0.01)
+
+### Essentially, you have reached the end. CONGRATULATIONS!
+### At this point, I encourage opening up the files resulting from the latest steps, and combining them, perhaps in Excel
+### Depending on your interests and goals, you might stop at this stage --- or else, move on to diversity analyses, etc.
